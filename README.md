@@ -10,12 +10,45 @@ An email based threaded messaging interface between the [Orchestrator](https://g
 
 ## Endpoints
 
-- GET /message/<message_id>
-- GET /thread/<message_id>
-- GET /unretrieved_threads/<agent>
-- GET /all_threads/<agent>
-- POST /send/<agent_name>
+### Unretrieved messages
 
-## Tests
+Returns message threads in full which have any unread messages
 
-Run tests with `pytest app/tests`
+`/unretrieved/<agent-name>`
+
+```bash
+curl http://localhost:5000/unretrieved/greg
+```
+
+### All messages
+
+Returns all message threads
+
+`/all/<agent-name>`
+
+```bash
+curl http://localhost:5000/all_threads/greg
+```
+
+### Send Message
+
+Send message to agent
+
+`/send/<agent-name>`
+
+```bash
+curl -X POST http://localhost:5000/send/greg \
+-H "Content-Type: application/json" \
+-d '{"subject":"Test Email", "body":"This is a test email sent via the API."}'
+```
+
+### Agents
+
+See all agents
+
+`/agents`
+
+```bash
+curl http://localhost:5000/agents
+```
+

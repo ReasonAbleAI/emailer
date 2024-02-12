@@ -1,6 +1,6 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
 from models import db, Agent, Message
-from email_service import fetch_emails
+from email_service import fetch_emails, send_email
 from settings import SETTINGS
 from agents import refresh_agents
 
@@ -30,7 +30,7 @@ def fetch_messages():
     return jsonify({'message': 'Emails fetched successfully!'})
 
 
-@app.route('/all_threads/<agent_name>', methods=['GET'])
+@app.route('/all/<agent_name>', methods=['GET'])
 def get_agents_threads(agent_name):
     agent = Agent.query.filter_by(name=agent_name).first()
 
@@ -50,7 +50,7 @@ def get_agents_threads(agent_name):
     return jsonify({'threads': agent_threads})
         
 
-@app.route('/unretrieved_threads/<agent_name>', methods=['GET'])
+@app.route('/unretrieved/<agent_name>', methods=['GET'])
 def get_agents_unretrieved_threads(agent_name):
     agent = Agent.query.filter_by(name=agent_name).first()
 
@@ -68,6 +68,22 @@ def get_agents_unretrieved_threads(agent_name):
     db.session.commit()   
     
     return jsonify({'threads': agent_threads})
+
+
+@app.route('/send/<agent_name>', methods=['POST'])
+def send_message_to_agent(agent_name):
+    agent = Agent.query.filter_by(name=agent_name).first()
+
+    if agent is None:
+        return jsonify({'error': 'Agent not found!'}), 404
+
+    data = request.json
+    subject = data.get('subject', '')
+    body = data.get('body', '')
+
+    send_email(agent.email, subject, body)
+
+    return jsonify({'message': f'Email sent successfully to {agent_name}'})
 
 
 if __name__ == '__main__':

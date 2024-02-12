@@ -6,6 +6,9 @@ from dateutil import parser
 from models import Message
 from sqlite3 import Connection as SqliteConnection
 from settings import SETTINGS
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def extract_email(email_string):
     email_regex = r'[\w\.-]+@[\w\.-]+\.\w+'
@@ -64,3 +67,17 @@ def fetch_emails(db: SqliteConnection, mailbox: str) -> None:
 
             db.session.add(new_message)
             db.session.commit()
+
+def send_email(to_email, subject, body):
+    msg = MIMEMultipart()
+    msg['From'] = SETTINGS['smtp']['username']
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+
+    server = smtplib.SMTP(SETTINGS['smtp']['host'], SETTINGS['smtp']['port'])
+    server.starttls()
+    server.login(SETTINGS['smtp']['username'], SETTINGS['smtp']['password'])
+    text = msg.as_string()
+    server.sendmail(SETTINGS['smtp']['username'], to_email, text)
+    server.quit()
