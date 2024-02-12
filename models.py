@@ -71,12 +71,12 @@ class Message(db.Model):
         return Message.query.filter_by(thread_email_message_id=self.thread_email_message_id).order_by((Message.timestamp)).all()
     
     def to_dict(self):
-        direction = 'to agent' if self.from_email_address == SETTINGS['imap']['username'] else 'from agent'
+        direction = 'OUTBOUND' if self.from_email_address == SETTINGS['imap']['username'] else 'INBOUND'
         return {
             'id': self.id,
             'subject': self.subject,
             'body': self.body,
             'direction': direction,
-            'timestamp': self.timestamp,
+            'timestamp': self.timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
             'retrieved': self.retrieved
         }

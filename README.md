@@ -36,10 +36,20 @@ Send message to agent
 
 `/send/<agent-name>`
 
+New message
+
 ```bash
 curl -X POST http://localhost:5000/send/greg \
 -H "Content-Type: application/json" \
 -d '{"subject":"Test Email", "body":"This is a test email sent via the API."}'
+```
+
+Responding to existing message
+
+```bash
+curl -X POST http://localhost:5000/send/greg \
+-H "Content-Type: application/json" \
+-d '{"body":"This is a test email sent via the API.", "responding_to":16}'
 ```
 
 ### Agents

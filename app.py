@@ -78,10 +78,20 @@ def send_message_to_agent(agent_name):
         return jsonify({'error': 'Agent not found!'}), 404
 
     data = request.json
-    subject = data.get('subject', '')
     body = data.get('body', '')
+    responding_to = data.get('responding_to', None)
 
-    send_email(agent.email, subject, body)
+    if responding_to:
+        responding_to_message = db.session.get(Message, responding_to)
+        subject = f"Re: {responding_to_message.subject}"
+        in_reply_to = responding_to_message.email_message_id
+        references = f"{responding_to_message.thread_email_message_id} {responding_to_message.email_message_id}"
+    else:
+        subject = data.get('subject', 'Message from Email Communicator')
+        in_reply_to = None
+        references = None
+
+    send_email(agent.email, subject, body, in_reply_to, references)
 
     return jsonify({'message': f'Email sent successfully to {agent_name}'})
 
