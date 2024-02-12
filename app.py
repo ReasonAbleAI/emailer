@@ -1,24 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from models import db, Agent, Message
-from sqlalchemy import desc
 from email_service import fetch_emails
 from settings import SETTINGS
 from agents import refresh_agents
 
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///email_communicator.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 
 db.init_app(app)
 
 with app.app_context():
     db.create_all()
     refresh_agents()
-
-
-@app.route('/')
-def index():
-    return "Hello, World!"
 
 
 @app.route('/agents', methods=['GET'])
@@ -28,62 +24,50 @@ def get_all_users():
     return jsonify({'agents': agents_list})
 
 
-@app.route('/fetch_emails', methods=['GET'])
-def get_fetch_emails():
+@app.route('/fetch_messages', methods=['GET'])
+def fetch_messages():
     fetch_emails(db, '"[Gmail]/All Mail"')
     return jsonify({'message': 'Emails fetched successfully!'})
 
 
-@app.route('/messages', methods=['GET'])
-def get_all_messages():
-    messages = Message.query.all()
-    message_list = []
+@app.route('/all_threads/<agent_name>', methods=['GET'])
+def get_agents_threads(agent_name):
+    agent = Agent.query.filter_by(name=agent_name).first()
 
-    for message in messages:
-        message_dict = {
-            'id': message.id,
-            'email_message_id': message.email_message_id,
-            'thread_email_message_id': message.thread_email_message_id,
-            'subject': message.subject,
-            'body': message.body,
-            'from_email_address': message.from_email_address,
-            'to_email_address': message.to_email_address,
-            'timestamp': message.timestamp,
-            'retrieved': message.retrieved
-        }
-        message_list.append(message_dict)
+    if agent is None:
+        return jsonify({'error': 'Agent not found!'}), 404
+    
+    fetch_emails(db, '"[Gmail]/All Mail"')
+    
+    agent_threads = agent.get_all_threads_dict()
+    message_ids = [item['id'] for sublist in agent_threads.values() for item in sublist]
+    
+    messages_to_mark_as_retrieved = db.session.query(Message).filter(Message.id.in_(message_ids))
+    for message in messages_to_mark_as_retrieved:
+        message.retrieved = True
+    db.session.commit()
 
-    return jsonify(message_list)
+    return jsonify({'threads': agent_threads})
+        
 
+@app.route('/unretrieved_threads/<agent_name>', methods=['GET'])
+def get_agents_unretrieved_threads(agent_name):
+    agent = Agent.query.filter_by(name=agent_name).first()
 
-@app.route('/latest_thread', methods=['GET'])
-def get_latest_thread():
-    last_message = Message.query.order_by((Message.timestamp)).first()
-    thread = last_message.thread()
-    thread_details = {
-        'last_message.id': last_message.id,
-        'first_message_id': thread[0].id,
-        'first_message_subject': thread[0].subject,
-        'first_message_timestamp': thread[0].timestamp,
-        'latest_message_id': thread[-1].id,
-        'latest_message_timestamp': thread[-1].timestamp,
-        'message_count': len(thread),
-        'thread': [message.to_dict() for message in thread]
-    }
-
-    return jsonify(thread_details)
-
-
-@app.route('/threads', methods=['GET'])
-def get_threads():
-    root_messages = Message.query.filter(Message.email_message_id==Message.thread_email_message_id).order_by(desc(Message.timestamp)).all()
-    thread_dict = {}
-    for message in root_messages:
-        thread_dict[message.id] = []
-        for thread_message in message.thread():
-            thread_dict[message.id].append(thread_message.to_dict())
-
-    return jsonify(thread_dict)
+    if agent is None:
+        return jsonify({'error': 'Agent not found!'}), 404
+    
+    fetch_emails(db, '"[Gmail]/All Mail"')
+    
+    agent_threads = agent.get_unretrieved_threads_dict()
+    message_ids = [item['id'] for sublist in agent_threads.values() for item in sublist]
+    
+    messages_to_mark_as_retrieved = db.session.query(Message).filter(Message.id.in_(message_ids))
+    for message in messages_to_mark_as_retrieved:
+        message.retrieved = True
+    db.session.commit()   
+    
+    return jsonify({'threads': agent_threads})
 
 
 if __name__ == '__main__':

@@ -1,4 +1,3 @@
-import os
 import re
 import imaplib
 from email.header import decode_header
@@ -39,7 +38,6 @@ def fetch_emails(db: SqliteConnection, mailbox: str) -> None:
         to_email_address = extract_email(parsed_email['to'])
         from_email_address = extract_email(parsed_email['from'])
         timestamp = parser.parse(parsed_email['date'])
-        in_reply_to = parsed_email['in-reply-to']
         references = parsed_email['references']
         
         if parsed_email.is_multipart():
@@ -51,18 +49,6 @@ def fetch_emails(db: SqliteConnection, mailbox: str) -> None:
             thread_email_message_id = references.split()[0]
         else:
             thread_email_message_id = email_message_id
-
-        print("\n" + "="*50)
-        print(f"Email ID: {email_message_id}")
-        print(f"Subject: {subject}")
-        print(f"To: {to_email_address}")
-        print(f"From: {from_email_address}")
-        print(f"Timestamp: {timestamp}")
-        print(f"In-Reply-To: {in_reply_to}")
-        print(f"References: {references}")
-        print("Body:\n```\n")
-        print(body)
-        print("\n```\n" + "="*50+"\n\n\n")
 
         if Message.query.filter_by(email_message_id=email_message_id).first() is None:
 
@@ -78,4 +64,3 @@ def fetch_emails(db: SqliteConnection, mailbox: str) -> None:
 
             db.session.add(new_message)
             db.session.commit()
-

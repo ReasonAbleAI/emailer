@@ -2,11 +2,6 @@ from settings import SETTINGS
 from models import db, Agent
 
 def delete_existing_agests():
-    # agents = Agent.query.all()
-    # for agent in agents:
-    #     db.session.delete(agent)
-    # db.session.commit()
-
     num_deleted = Agent.query.delete()
     db.session.commit()
     print(f"Deleted {num_deleted} agents")

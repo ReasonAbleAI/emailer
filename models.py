@@ -15,6 +15,40 @@ class Agent(db.Model):
             'name': self.name,
             'email': self.email
         }
+    
+    def messages(self):
+        return Message.query.filter(
+            (Message.to_email_address == self.email) |
+            (Message.from_email_address == self.email)
+        ).order_by(Message.timestamp.desc()).all()
+    
+    def get_all_threads_dict(self):
+        root_messages = Message.query.filter(
+            Message.email_message_id == Message.thread_email_message_id,
+            (Message.to_email_address == self.email) | 
+            (Message.from_email_address == self.email)
+        ).order_by(Message.timestamp.desc()).all()
+
+        thread_dict = {
+            root_message.id: [msg.to_dict() for msg in root_message.thread()]
+            for root_message in root_messages
+        }
+
+        return thread_dict
+    
+    def get_unretrieved_threads_dict(self):
+        unretrieved_messages = Message.query.filter(
+            Message.retrieved.is_(False),
+            Message.from_email_address == self.email
+        ).order_by(Message.timestamp.desc()).all()
+
+        thread_dict = {
+            message.thread()[0].id: [m.to_dict() for m in message.thread()]
+            for message in unretrieved_messages
+        }
+
+        return thread_dict
+
 
 class Message(db.Model):
     __tablename__ = 'messages'
@@ -34,45 +68,6 @@ class Message(db.Model):
     
     def thread(self):
         return Message.query.filter_by(thread_email_message_id=self.thread_email_message_id).order_by((Message.timestamp)).all()
-
-    # def thread(self):
-    #     query = db.text("""
-    #         WITH RECURSIVE
-    #             ancestors AS (
-    #                 SELECT id, parent_id
-    #                 FROM messages
-    #                 WHERE id = :message_id
-
-    #                 UNION ALL
-
-    #                 SELECT m.id, m.parent_id
-    #                 FROM messages m
-    #                 JOIN ancestors a ON m.id = a.parent_id
-    #             ),
-    #             descendants AS (
-    #                 SELECT id, parent_id
-    #                 FROM messages
-    #                 WHERE parent_id IS :message_id
-
-    #                 UNION ALL
-
-    #                 SELECT m.id, m.parent_id
-    #                 FROM messages m
-    #                 JOIN descendants d ON m.parent_id = d.id
-    #             ),
-    #             thread_message_ids AS (
-    #                 SELECT id FROM ancestors
-    #                 UNION
-    #                 SELECT id FROM descendants
-    #             )
-    #         SELECT m.*
-    #         FROM
-    #             messages m
-    #             JOIN thread_message_ids t ON m.id = t.id
-    #         ORDER BY id ASC;
-    #     """)
-    #     result = db.session.execute(query, {'message_id': self.id}).mappings().all()
-    #     return [Messages(**row) for row in result]
     
     def to_dict(self):
         return {
