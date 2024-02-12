@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from settings import SETTINGS
 
 db = SQLAlchemy()
 
@@ -70,14 +71,12 @@ class Message(db.Model):
         return Message.query.filter_by(thread_email_message_id=self.thread_email_message_id).order_by((Message.timestamp)).all()
     
     def to_dict(self):
+        direction = 'to agent' if self.from_email_address == SETTINGS['imap']['username'] else 'from agent'
         return {
             'id': self.id,
-            'email_message_id': self.email_message_id,
-            'thread_email_message_id': self.thread_email_message_id,
             'subject': self.subject,
             'body': self.body,
-            'from_email_address': self.from_email_address,
-            'to_email_address': self.to_email_address,
+            'direction': direction,
             'timestamp': self.timestamp,
             'retrieved': self.retrieved
         }
