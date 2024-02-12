@@ -1,0 +1,9 @@
+version: '3'
+services:
+  emailer:
+    image: ghcr.io/reasonableai/emailer:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./settings.yaml:/app/settings.yaml
+  

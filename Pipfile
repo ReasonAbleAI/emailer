@@ -11,6 +11,7 @@ python-dotenv = "*"
 flask_sqlalchemy = "*"
 python-dateutil = "*"
 pyyaml = "*"
+gunicorn = "*"
 
 [dev-packages]
 pytest = "*"
