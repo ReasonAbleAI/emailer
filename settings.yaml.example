@@ -1,0 +1,15 @@
+agents:
+  - name: greg
+    email: greg@domain.tld
+
+imap:
+  host: imap.gmail.com
+  port: 993
+  username: raai@gmail.com
+  password: my_long_password
+
+smtp:
+  host: smtp.gmail.com
+  port: 587
+  username: raai@gmail.com
+  password: my_long_password
